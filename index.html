@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super Math Bros - 4° Nivel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- HUD / Barra Superior -->
+    <div id="hud">
+        <div class="hud-box"><span class="hud-label">PUNTOS</span><span class="hud-value" id="hud-score">000000</span></div>
+        <div class="hud-box"><span class="hud-label">MONEDAS</span><span class="hud-value">🪙 x<span id="hud-coins">00</span></span></div>
+        <div class="hud-box"><span class="hud-label">MODO</span><span class="hud-value" id="hud-mode">TODAS</span></div>
+        <div class="hud-box"><span class="hud-label">VIDAS</span><span class="hud-value">❤️ <span id="hud-lives">3</span></span></div>
+    </div>
+
+    <!-- Contenedor Principal del Juego -->
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+        <!-- Overlay de Pregunta Matemática -->
+        <div id="math-overlay">
+            <div class="math-card">
+                <div class="math-title" id="math-topic">¡BLOQUE MÁGICO!</div>
+                <div class="math-question" id="math-question-text">Cargando pregunta...</div>
+                
+                <!-- Reloj Análogo -->
+                <canvas id="clockCanvas" width="150" height="150" style="display:none; margin: 10px auto;"></canvas>
+
+                <div class="options-grid" id="options-container">
+                    <!-- 5 Opciones generadas dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla de Inicio / Menú de Selección -->
+        <div id="screen-overlay" class="visible">
+            <h1 id="screen-title">Aventura Matemática</h1>
+            <p id="screen-subtitle">SUPER MATH BROS - 4° Nivel - Colegio Senda del Saber</p>
+            
+            <p class="menu-label">SELECCIONA EL DESAFÍO:</p>
+            <div class="category-buttons-grid">
+                <button class="btn-category active" data-cat="ALL">🌟 TODAS AL AZAR</button>
+                <button class="btn-category" data-cat="PROBLEMAS">🧠 PROBLEMAS</button>
+                <button class="btn-category" data-cat="SUMA">➕ SUMAS</button>
+                <button class="btn-category" data-cat="RESTA">➖ RESTAS</button>
+                <button class="btn-category" data-cat="MULT">✖️ MULTIPLICACIÓN</button>
+                <button class="btn-category" data-cat="DIV">➗ DIVISIÓN</button>
+                <button class="btn-category" data-cat="PATRON">🔄 PATRONES Y SECUENCIAS</button>
+                <button class="btn-category" data-cat="RELOJ">🕒 RELOJ  ANÁLOGO</button>
+            </div>
+
+            <button class="btn-start" id="btn-start-game">¡COMENZAR AVENTURA!</button>
+        </div>
+    </div>
+
+    <!-- Controles Táctiles para Móviles/Tablets -->
+    <div id="mobile-controls">
+        <div class="dpad">
+            <button class="btn-touch" id="btn-left">◀</button>
+            <button class="btn-touch" id="btn-right">▶</button>
+        </div>
+        <button class="btn-touch btn-jump" id="btn-jump">SALTO ⬆</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
