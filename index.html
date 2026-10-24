@@ -19,7 +19,7 @@
 
     <!-- Contenedor Principal del Juego -->
     <div id="game-container">
-        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <canvas id="gameCanvas" width="960" height="480"></canvas>
 
         <!-- Overlay de Pregunta Matemática -->
         <div id="math-overlay">
@@ -27,11 +27,11 @@
                 <div class="math-title" id="math-topic">¡BLOQUE MÁGICO!</div>
                 <div class="math-question" id="math-question-text">Cargando pregunta...</div>
                 
-                <!-- Reloj Análogo -->
-                <canvas id="clockCanvas" width="150" height="150" style="display:none; margin: 10px auto;"></canvas>
+                <!-- Reloj Análogo Optimizado -->
+                <canvas id="clockCanvas" width="120" height="120" style="display:none; margin: 5px auto;"></canvas>
 
                 <div class="options-grid" id="options-container">
-                    <!-- 5 Opciones generadas dinámicamente -->
+                    <!-- Opciones generadas dinámicamente -->
                 </div>
             </div>
         </div>
@@ -50,7 +50,7 @@
                 <button class="btn-category" data-cat="MULT">✖️ MULTIPLICACIÓN</button>
                 <button class="btn-category" data-cat="DIV">➗ DIVISIÓN</button>
                 <button class="btn-category" data-cat="PATRON">🔄 PATRONES Y SECUENCIAS</button>
-                <button class="btn-category" data-cat="RELOJ">🕒 RELOJ  ANÁLOGO</button>
+                <button class="btn-category" data-cat="RELOJ">🕒 RELOJ ANÁLOGO</button>
             </div>
 
             <button class="btn-start" id="btn-start-game">¡COMENZAR AVENTURA!</button>
