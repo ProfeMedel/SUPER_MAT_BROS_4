@@ -1,21 +1,4 @@
-/**
- * Super Math Bros - 4° Nivel
- * Basado en el Currículum Nacional MINEDUC
- */
-
-// =========================================================================
-// CONFIGURACIÓN DE RECURSOS E IMAGEN DEL BLOQUE ❓
-// =========================================================================
-const QUESTION_BLOCK_IMAGE_URL = 'logo.png';
-
-const blockImg = new Image();
-let isBlockImageLoaded = false;
-
-blockImg.onload = () => { isBlockImageLoaded = true; };
-blockImg.onerror = () => { isBlockImageLoaded = false; };
-blockImg.src = QUESTION_BLOCK_IMAGE_URL;
-
-// --- 1. SINTETIZADOR DE SONIDO (Web Audio API) ---
+// --- SINTETIZADOR DE SONIDO (Web Audio API) ---
 class SoundEngine {
     constructor() {
         this.ctx = null;
@@ -23,830 +6,1081 @@ class SoundEngine {
 
     init() {
         if (!this.ctx) {
-            try {
-                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-            } catch (e) {
-                console.warn("Audio no soportado en este navegador.");
-            }
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
         }
     }
 
     playJump() {
         if (!this.ctx) return;
-        let osc = this.ctx.createOscillator();
-        let gain = this.ctx.createGain();
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.15);
-    }
-
-    playCoin() {
-        if (!this.ctx) return;
-        let osc = this.ctx.createOscillator();
-        let gain = this.ctx.createGain();
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(987.77, this.ctx.currentTime);
-        osc.frequency.setValueAtTime(1318.51, this.ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        osc.frequency.setValueAtTime(280, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(620, this.ctx.currentTime + 0.25);
+
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.3);
+        osc.stop(this.ctx.currentTime + 0.25);
     }
 
-    playCorrect() {
+    playCollect() {
         if (!this.ctx) return;
-        let notes = [523.25, 659.25, 783.99, 1046.50];
+        const notes = [523.25, 659.25, 783.99, 1046.50];
         notes.forEach((freq, idx) => {
-            let osc = this.ctx.createOscillator();
-            let gain = this.ctx.createGain();
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.06);
+
+            gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.06 + 0.12);
+
             osc.connect(gain);
             gain.connect(this.ctx.destination);
-            osc.type = 'triangle';
-            osc.frequency.value = freq;
-            let startTime = this.ctx.currentTime + idx * 0.08;
-            gain.gain.setValueAtTime(0.15, startTime);
-            gain.gain.linearRampToValueAtTime(0.01, startTime + 0.15);
-            osc.start(startTime);
-            osc.stop(startTime + 0.15);
+
+            osc.start(this.ctx.currentTime + idx * 0.06);
+            osc.stop(this.ctx.currentTime + idx * 0.06 + 0.12);
         });
     }
 
-    playWrong() {
+    playExtraLife() {
         if (!this.ctx) return;
-        let osc = this.ctx.createOscillator();
-        let gain = this.ctx.createGain();
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        const notes = [440, 554.37, 659.25, 880];
+        notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
+
+            gain.gain.setValueAtTime(0.3, this.ctx.currentTime + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.08 + 0.2);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(this.ctx.currentTime + idx * 0.08);
+            osc.stop(this.ctx.currentTime + idx * 0.08 + 0.2);
+        });
+    }
+
+    playHit() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(180, this.ctx.currentTime);
-        osc.frequency.setValueAtTime(110, this.ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.3);
+
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
         osc.start();
         osc.stop(this.ctx.currentTime + 0.3);
+    }
+
+    playGameOver() {
+        if (!this.ctx) return;
+        const notes = [400, 350, 300, 250];
+        notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.15);
+
+            gain.gain.setValueAtTime(0.25, this.ctx.currentTime + idx * 0.15);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.15 + 0.25);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(this.ctx.currentTime + idx * 0.15);
+            osc.stop(this.ctx.currentTime + idx * 0.15 + 0.25);
+        });
+    }
+
+    playVictory() {
+        if (!this.ctx) return;
+        const notes = [523.25, 523.25, 523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.12);
+
+            gain.gain.setValueAtTime(0.3, this.ctx.currentTime + idx * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.12 + 0.2);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(this.ctx.currentTime + idx * 0.12);
+            osc.stop(this.ctx.currentTime + idx * 0.12 + 0.2);
+        });
     }
 }
 
 const audio = new SoundEngine();
 
-// --- 2. BANCO DE PREGUNTAS BASE ---
-const questionBank = {
-    PROBLEMAS: [
-        { topic: "RESOLUCIÓN DE PROBLEMAS", question: "Camila tenía $850. Compró un jugo de $300 y un alfajor de $250. ¿Cuánto dinero le quedó después de ambas compras?", options: ["$300", "$550", "$250", "$350", "$400"], answer: 0 },
-        { topic: "RESOLUCIÓN DE PROBLEMAS", question: "En una biblioteca hay 3 repisas. Cada repisa tiene 8 libros. Si regalan 5 libros, ¿cuántos quedan en las repisas?", options: ["19 libros", "24 libros", "18 libros", "29 libros", "15 libros"], answer: 0 },
-        { topic: "RESOLUCIÓN DE PROBLEMAS", question: "Tomás compra 4 paquetes con 5 láminas cada uno. Su amigo le regala 8 láminas más. ¿Cuántas tiene en total?", options: ["28 láminas", "20 láminas", "17 láminas", "32 láminas", "25 láminas"], answer: 0 },
-        { topic: "RESOLUCIÓN DE PROBLEMAS", question: "Un furgón escolar lleva 18 niños. En la 1° parada bajan 6 niños y en la 2° suben 4. ¿Cuántos van en el furgón ahora?", options: ["16 niños", "12 niños", "20 niños", "14 niños", "18 niños"], answer: 0 },
-        { topic: "RESOLUCIÓN DE PROBLEMAS", question: "Don Pedro cosechó 40 naranjas y las repartió por igual en 5 bolsas. Si regala una bolsa completa, ¿cuántas naranjas le quedan?", options: ["32 naranjas", "35 naranjas", "8 naranjas", "24 naranjas", "30 naranjas"], answer: 0 }
-    ],
-    SUMA: [
-        { topic: "SUMA HASTA 1.000", question: "¿Cuánto es 354 + 215?", options: ["569", "559", "579", "669", "469"], answer: 0 },
-        { topic: "SUMA HASTA 1.000", question: "En 3°A juntaron $450 y en 3°B $320. ¿Cuánto reunieron en total?", options: ["$770", "$750", "$670", "$870", "$720"], answer: 0 },
-        { topic: "SUMA HASTA 1.000", question: "Suma 612 + 283:", options: ["895", "885", "893", "995", "795"], answer: 0 }
-    ],
-    RESTA: [
-        { topic: "RESTA HASTA 1.000", question: "¿Cuál es el resultado de 685 - 243?", options: ["442", "448", "342", "422", "542"], answer: 0 },
-        { topic: "RESTA HASTA 1.000", question: "Tenías $900 y gastaste $350. ¿Cuánto dinero te queda?", options: ["$550", "$650", "$500", "$450", "$600"], answer: 0 }
-    ],
-    MULT: [
-        { topic: "MULTIPLICACIÓN", question: "Un paquete tiene 5 galletas. Si compro 6 paquetes, ¿cuántas galletas tengo?", options: ["30", "25", "35", "20", "40"], answer: 0 },
-        { topic: "MULTIPLICACIÓN", question: "¿Cuánto es 8 × 3?", options: ["24", "21", "27", "18", "30"], answer: 0 }
-    ],
-    DIV: [
-        { topic: "DIVISIÓN EQUITATIVA", question: "Repartes 20 lápices en partes iguales entre 4 niños. ¿Cuántos recibe cada uno?", options: ["5", "4", "6", "10", "2"], answer: 0 },
-        { topic: "DIVISIÓN EQUITATIVA", question: "Si distribuyes 15 galletas entre 3 amigos por igual, ¿cuántas tiene cada uno?", options: ["5", "3", "4", "6", "15"], answer: 0 }
-    ],
-    PATRON: [
-        { topic: "PATRONES Y SECUENCIAS", question: "Descubre el número faltante: 120, 125, 130, ___, 140", options: ["135", "131", "134", "145", "138"], answer: 0 },
-        { topic: "PATRONES Y SECUENCIAS", question: "¿Cuál es la regla de la secuencia? 500, 450, 400, 350...", options: ["Restar 50", "Sumar 50", "Restar 10", "Restar 100", "Sumar 100"], answer: 0 }
-    ],
-    RELOJ: [
-        { topic: "USO DEL RELOJ ANÁLOGO", question: "¿Qué hora marca el reloj?", type: "clock", hours: 3, minutes: 30, options: ["03:30 hrs", "04:30 hrs", "03:06 hrs", "06:15 hrs", "02:30 hrs"], answer: 0 },
-        { topic: "USO DEL RELOJ ANÁLOGO", question: "Indica la hora exacta que señalan las manecillas:", type: "clock", hours: 8, minutes: 15, options: ["08:15 hrs", "08:03 hrs", "03:40 hrs", "09:15 hrs", "07:15 hrs"], answer: 0 }
-    ]
-};
+const sendaImg = new Image();
+sendaImg.src = 'images/senda.png';
 
-// Generador auxiliar de preguntas y opciones
-function addQuestion(category, item) { questionBank[category].push(item); }
-function makeOptions(answer, distractors, suffix = '') {
-    return [...new Set([answer, ...distractors].map(v => `${v}${suffix}`))].slice(0, 5);
-}
-function numericQuestion(topic, question, answer, distractors) {
-    return { topic, question, options: makeOptions(answer, distractors), answer: 0 };
-}
-
-// Generación dinámica de 40 preguntas por categoría
-for (let i = 0; i < 40; i++) {
-    const a = 101 + ((i * 37 + 23) % 650), b = 20 + ((i * 19 + 41) % 200), ans = a + b;
-    addQuestion('SUMA', numericQuestion('SUMA HASTA 1.000', `Calcula: ${a} + ${b}`, ans, [ans - 10, ans + 10, ans - 100, ans + 100]));
-    addQuestion('RESTA', numericQuestion('RESTA HASTA 1.000', `Calcula: ${a + 200} - ${b}`, a + 200 - b, [a + 210 - b, a + 190 - b, a + 300 - b, a - b]));
-    addQuestion('MULT', numericQuestion('MULTIPLICACIÓN', `¿Cuánto es ${(i%8)+2} × ${(i%9)+2}?`, ((i%8)+2)*((i%9)+2), [((i%8)+2)*((i%9)+2)+2, ((i%8)+2)*((i%9)+2)-2, 10, 20]));
-    addQuestion('DIV', numericQuestion('DIVISIÓN EQUITATIVA', `Reparte ${((i%5)+2)*(i+2)} objetos en ${(i%5)+2} grupos iguales.`, i+2, [i+3, Math.max(1, i+1), i+4, i+5]));
-
-    // Patrones y Secuencias Variables (+2, +3, +4, +6, +8, +10, +15, +20, +25, +50, +100 y patrones decrecientes)
-    const patternSteps = [2, 3, 4, 6, 8, 10, 15, 20, 25, 50, 100];
-    const step = patternSteps[i % patternSteps.length];
-    const isDecreasing = i % 3 === 0;
-    let startVal = 40 + ((i * 37) % 700);
-    if (isDecreasing) startVal += step * 5;
-
-    let s1 = startVal;
-    let s2 = isDecreasing ? startVal - step : startVal + step;
-    let s3 = isDecreasing ? startVal - (step * 2) : startVal + (step * 2);
-    let ansPatron = isDecreasing ? startVal - (step * 3) : startVal + (step * 3);
-
-    addQuestion('PATRON', {
-        topic: 'PATRONES Y SECUENCIAS',
-        question: `Completa la secuencia: ${s1}, ${s2}, ${s3}, ___`,
-        options: makeOptions(ansPatron, [
-            ansPatron + step, 
-            ansPatron - step, 
-            ansPatron + (step * 2), 
-            Math.max(1, ansPatron - 5)
-        ]),
-        answer: 0
-    });
-
-    // Reloj Análogo
-    addQuestion('RELOJ', { 
-        topic: 'USO DEL RELOJ ANÁLOGO', 
-        question: '¿Qué hora marca el reloj?', 
-        type: 'clock', 
-        hours: (i % 12) + 1, 
-        minutes: (i % 4) * 15, 
-        options: makeOptions(
-            `${String((i % 12) + 1).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')} hrs`,
-            ["01:00 hrs", "04:30 hrs", "08:15 hrs", "12:00 hrs", "06:45 hrs"]
-        ), 
-        answer: 0 
-    });
-
-    // Problemas
-    addQuestion('PROBLEMAS', { 
-        topic: 'RESOLUCIÓN DE PROBLEMAS', 
-        question: `Diego junta $${100 + i * 10} y le regalan $${50 + i * 5}. ¿Cuánto dinero junta en total?`, 
-        options: [`$${150 + i * 15}`, `$${100 + i * 10}`, `$${200 + i * 15}`, `$${120 + i * 10}`, `$${140 + i * 15}`], 
-        answer: 0 
-    });
-}
-
-function shuffledSample(items, count) {
-    const copy = [...items];
-    for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy.slice(0, count);
-}
-
-// --- 3. ESTADO GLOBAL Y PARTÍCULAS ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-let gameState = {
-    score: 0,
-    coins: 0,
-    lives: 3,
-    active: false,
-    cameraX: 0,
-    selectedCategory: 'ALL',
-    animFrame: 0
-};
+const clockCanvas = document.getElementById('clockCanvas');
+const clockCtx = clockCanvas.getContext('2d');
 
-let particles = [];
+const hudScore = document.getElementById('hud-score');
+const hudCoins = document.getElementById('hud-coins');
+const hudMode = document.getElementById('hud-mode');
+const hudLives = document.getElementById('hud-lives');
 
-function createParticles(x, y, color, count = 10) {
-    for (let i = 0; i < count; i++) {
-        particles.push({
-            x: x,
-            y: y,
-            vx: (Math.random() - 0.5) * 6,
-            vy: (Math.random() - 0.5) * 6 - 2,
-            size: Math.random() * 4 + 2,
-            color: color,
-            life: 30
+const screenOverlay = document.getElementById('screen-overlay');
+const mathOverlay = document.getElementById('math-overlay');
+const mathTopic = document.getElementById('math-topic');
+const mathQuestionText = document.getElementById('math-question-text');
+const optionsContainer = document.getElementById('options-container');
+
+const btnStartGame = document.getElementById('btn-start-game');
+const categoryButtons = document.querySelectorAll('.btn-category');
+
+let isPlaying = false;
+let score = 0;
+let coins = 0;
+let lives = 3;
+let lastLifeMilestone = 0;
+let gameSpeed = 4.5;
+let currentScrollSpeed = 0;
+let selectedCategory = "ALL";
+let animationFrameId = null;
+let messagePauseTimer = 0;
+let airJumps = 0;
+const maxAirJumps = 3;
+
+let activeBrick = null;
+let sessionUsedQuestions = []; 
+let questionsAnsweredInRun = 0;
+let targetQuestionsPerRun = 15;
+
+const keys = { left: false, right: false, down: false };
+
+function shuffleArray(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+// --- GENERACIÓN DE 50 PREGUNTAS POR CATEGORÍA (350 EN TOTAL) ---
+function generateQuestionBank() {
+    let bank = [];
+
+    // 1. SUMA (50 preguntas)
+    for (let i = 1; i <= 50; i++) {
+        let a = Math.floor(Math.random() * 700) + 100;
+        let b = Math.floor(Math.random() * 700) + 100;
+        let correct = a + b;
+        let options = shuffleArray([
+            String(correct),
+            String(correct + 10),
+            String(correct - 10),
+            String(correct + 25),
+            String(correct - 15)
+        ]);
+        bank.push({ cat: "SUMA", topic: "Adición Avanzada", q: `¿Cuánto es ${a} + ${b}?`, options: options, correct: String(correct) });
+    }
+
+    // 2. RESTA (50 preguntas)
+    for (let i = 1; i <= 50; i++) {
+        let a = Math.floor(Math.random() * 500) + 400;
+        let b = Math.floor(Math.random() * 300) + 50;
+        if (a < b) [a, b] = [b, a];
+        let correct = a - b;
+        let options = shuffleArray([
+            String(correct),
+            String(correct + 10),
+            String(correct - 10),
+            String(correct + 5),
+            String(correct - 25)
+        ]);
+        bank.push({ cat: "RESTA", topic: "Sustracción", q: `¿Cuánto es ${a} - ${b}?`, options: options, correct: String(correct) });
+    }
+
+    // 3. MULTIPLICACIÓN (50 preguntas)
+    for (let i = 1; i <= 50; i++) {
+        let a = Math.floor(Math.random() * 9) + 2;
+        let b = Math.floor(Math.random() * 9) + 2;
+        let correct = a * b;
+        let options = shuffleArray([
+            String(correct),
+            String(correct + a),
+            String(correct - b),
+            String(correct + 6),
+            String(correct - 4)
+        ]);
+        bank.push({ cat: "MULT", topic: "Multiplicación", q: `¿Cuánto es ${a} × ${b}?`, options: options, correct: String(correct) });
+    }
+
+    // 4. DIVISIÓN (50 preguntas)
+    for (let i = 1; i <= 50; i++) {
+        let b = Math.floor(Math.random() * 8) + 2;
+        let multiplier = Math.floor(Math.random() * 9) + 2;
+        let a = b * multiplier;
+        let correct = multiplier;
+        let options = shuffleArray([
+            String(correct),
+            String(correct + 1),
+            String(Math.max(1, correct - 1)),
+            String(correct + 2),
+            String(Math.max(1, correct - 2))
+        ]);
+        bank.push({ cat: "DIV", topic: "División", q: `¿Cuánto es ${a} dividido en ${b}?`, options: options, correct: String(correct) });
+    }
+
+    // 5. PROBLEMAS COTIDIANOS (50 preguntas)
+    const itemsList = [
+        { item: "un cuaderno", price: 650 },
+        { item: "un lápiz", price: 300 },
+        { item: "una regla", price: 400 },
+        { item: "un estuche", price: 1200 },
+        { item: "un jugo", price: 500 },
+        { item: "un pan", price: 350 },
+        { item: "una manzana", price: 250 },
+        { item: "un libro", price: 2500 }
+    ];
+    for (let i = 1; i <= 50; i++) {
+        let item1 = itemsList[Math.floor(Math.random() * itemsList.length)];
+        let item2 = itemsList[Math.floor(Math.random() * itemsList.length)];
+        while (item1.item === item2.item) {
+            item2 = itemsList[Math.floor(Math.random() * itemsList.length)];
+        }
+        let qty1 = Math.floor(Math.random() * 3) + 1;
+        let qty2 = Math.floor(Math.random() * 3) + 1;
+        let total = (item1.price * qty1) + (item2.price * qty2);
+        let correctStr = `$${total}`;
+        let options = shuffleArray([
+            correctStr,
+            `$${total + 100}`,
+            `$${Math.max(100, total - 100)}`,
+            `$${total + 250}`,
+            `$${Math.max(100, total - 200)}`
+        ]);
+        bank.push({
+            cat: "PROBLEMAS",
+            topic: "Problema Cotidiano",
+            q: `Compraste ${qty1} ${item1.item}(s) a $${item1.price} c/u y ${qty2} ${item2.item}(s) a $${item2.price} c/u. ¿Cuánto gastaste en total?`,
+            options: options,
+            correct: correctStr
         });
     }
+
+    // 6. PATRONES Y SECUENCIAS (50 preguntas)
+    for (let i = 1; i <= 50; i++) {
+        let start = Math.floor(Math.random() * 50) + 10;
+        let step = Math.floor(Math.random() * 8) + 3;
+        let seq = [start, start + step, start + step * 2, start + step * 3];
+        let correct = start + step * 4;
+        let options = shuffleArray([
+            String(correct),
+            String(correct + step),
+            String(correct - step),
+            String(correct + 2),
+            String(correct - 2)
+        ]);
+        bank.push({
+            cat: "PATRON",
+            topic: "Patrón Numérico",
+            q: `¿Qué número continúa la secuencia? ${seq.join(", ")}, ___`,
+            options: options,
+            correct: String(correct)
+        });
+    }
+
+    // 7. RELOJ ANÁLOGO (50 preguntas)
+    const clockTimes = [];
+    for (let h = 1; h <= 12; h++) {
+        clockTimes.push({ h: h, m: 0 });
+        clockTimes.push({ h: h, m: 30 });
+    }
+    for (let i = 1; i <= 50; i++) {
+        let timeObj = clockTimes[(i - 1) % clockTimes.length];
+        let hourStr = String(timeObj.h).padStart(2, '0');
+        let minStr = String(timeObj.m).padStart(2, '0');
+        let correctStr = `${hourStr}:${minStr}`;
+        
+        let d1h = (timeObj.h % 12) + 1;
+        let d2h = ((timeObj.h + 2) % 12) + 1;
+        let distractor1 = `${String(d1h).padStart(2, '0')}:${minStr}`;
+        let distractor2 = `${hourStr}:${minStr === '00' ? '30' : '00'}`;
+        let distractor3 = `${String(d2h).padStart(2, '0')}:${minStr === '00' ? '30' : '00'}`;
+        let distractor4 = `${String((timeObj.h + 4) % 12 + 1).padStart(2, '0')}:00`;
+
+        let options = shuffleArray([correctStr, distractor1, distractor2, distractor3, distractor4]);
+        bank.push({
+            cat: "RELOJ",
+            topic: "Reloj Análogo",
+            q: `¿Qué hora marca el reloj análogo?`,
+            options: options,
+            correct: correctStr,
+            hour: timeObj.h,
+            minute: timeObj.m
+        });
+    }
+
+    return bank;
 }
 
-function updateParticles() {
-    for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        if (p.life <= 0) particles.splice(i, 1);
+const questionBank = generateQuestionBank();
+
+// --- DIBUJO DEL RELOJ ANÁLOGO ---
+function drawClock(hour, minute) {
+    const w = clockCanvas.width;
+    const h = clockCanvas.height;
+    const radius = w / 2 - 8;
+
+    clockCtx.clearRect(0, 0, w, h);
+    
+    clockCtx.save();
+    clockCtx.translate(w / 2, h / 2);
+
+    clockCtx.beginPath();
+    clockCtx.arc(0, 0, radius + 4, 0, Math.PI * 2);
+    clockCtx.fillStyle = '#5c3317';
+    clockCtx.fill();
+
+    clockCtx.beginPath();
+    clockCtx.arc(0, 0, radius + 1, 0, Math.PI * 2);
+    clockCtx.fillStyle = '#0284c7';
+    clockCtx.fill();
+
+    clockCtx.beginPath();
+    clockCtx.arc(0, 0, radius - 5, 0, Math.PI * 2);
+    clockCtx.fillStyle = '#f0f9ff';
+    clockCtx.fill();
+
+    clockCtx.fillStyle = '#dc2626';
+    clockCtx.font = 'bold 15px Arial';
+    clockCtx.textAlign = 'center';
+    clockCtx.textBaseline = 'middle';
+
+    for (let num = 1; num <= 12; num++) {
+        let angle = (num * Math.PI) / 6 - Math.PI / 2;
+        let x = (radius - 17) * Math.cos(angle);
+        let y = (radius - 17) * Math.sin(angle);
+        clockCtx.fillText(num.toString(), x, y);
+    }
+
+    let hourAngle = ((hour % 12) + minute / 60) * (Math.PI / 6);
+    clockCtx.save();
+    clockCtx.rotate(hourAngle);
+    clockCtx.beginPath();
+    clockCtx.rect(-3, -28, 6, 28);
+    clockCtx.fillStyle = '#84cc16';
+    clockCtx.fill();
+    clockCtx.lineWidth = 2;
+    clockCtx.strokeStyle = '#3f6212';
+    clockCtx.stroke();
+    clockCtx.restore();
+
+    let minuteAngle = (minute / 60) * (Math.PI * 2);
+    clockCtx.save();
+    clockCtx.rotate(minuteAngle);
+    clockCtx.beginPath();
+    clockCtx.rect(-2.5, -38, 5, 38);
+    clockCtx.fillStyle = '#eab308';
+    clockCtx.fill();
+    clockCtx.lineWidth = 2;
+    clockCtx.strokeStyle = '#854d0e';
+    clockCtx.stroke();
+    clockCtx.restore();
+
+    clockCtx.beginPath();
+    clockCtx.arc(0, 0, 7, 0, Math.PI * 2);
+    clockCtx.fillStyle = '#dc2626';
+    clockCtx.fill();
+    clockCtx.lineWidth = 2;
+    clockCtx.strokeStyle = '#450a0a';
+    clockCtx.stroke();
+
+    clockCtx.restore();
+}
+
+function drawBrickPlatform(x, y, width, height) {
+    ctx.fillStyle = '#b45309';
+    ctx.fillRect(x, y, width, height);
+    ctx.strokeStyle = '#78350f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, width, height);
+
+    ctx.strokeStyle = '#78350f';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y + height / 2);
+    ctx.lineTo(x + width, y + height / 2);
+    ctx.stroke();
+
+    for (let bx = x + 22; bx < x + width; bx += 28) {
+        ctx.beginPath();
+        ctx.moveTo(bx, y);
+        ctx.lineTo(bx, y + height / 2);
+        ctx.stroke();
+    }
+    for (let bx = x + 12; bx < x + width; bx += 28) {
+        ctx.beginPath();
+        ctx.moveTo(bx, y + height / 2);
+        ctx.lineTo(bx, y + height);
+        ctx.stroke();
     }
 }
 
-function drawParticles() {
-    particles.forEach(p => {
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-    });
-}
-
-const keys = { right: false, left: false, up: false };
-
-const player = {
-    x: 50,
-    y: 280,
-    width: 32,
-    height: 44,
+// --- CONFIGURACIÓN DEL PERSONAJE ---
+const hero = {
+    x: 100,
+    y: 0,
+    normalWidth: 48,
+    normalHeight: 56,
+    width: 48,
+    height: 56,
     vx: 0,
     vy: 0,
     speed: 4.5,
-    jumpPower: -11.5,
-    grounded: false,
-    direction: 'right'
-};
+    gravity: 0.6,
+    jumpForce: -13,
+    groundY: 0,
+    isGrounded: false,
+    isCrouching: false,
+    facing: 'right',
+    isInvulnerable: false,
+    invulnerableTimer: 0,
 
-const gravity = 0.55;
+    reset() {
+        this.x = 100;
+        this.groundY = canvas.height - 70;
+        this.width = this.normalWidth;
+        this.height = this.normalHeight;
+        this.y = this.groundY - this.height;
+        this.vx = 0;
+        this.vy = 0;
+        this.isGrounded = true;
+        this.isCrouching = false;
+        this.facing = 'right';
+        this.isInvulnerable = false;
+        this.invulnerableTimer = 0;
+        airJumps = 0;
+    },
 
-let blocks = [];
-let coinsList = [];
-let flagPole = { x: 7700, y: 180, width: 24, height: 260 };
-let currentActiveBlock = null;
+    jump() {
+        if (this.isCrouching) return;
 
-function getActiveQuestions() {
-    const category = gameState.selectedCategory;
-    if (category !== 'ALL' && questionBank[category]) {
-        return shuffledSample(questionBank[category], 10);
-    }
-    return shuffledSample(Object.values(questionBank).flat(), 30);
-}
-
-// --- 4. GENERACIÓN DEL NIVEL EXTENDIDO ---
-function initLevel() {
-    blocks = [];
-    coinsList = [];
-
-    let isAllMode = gameState.selectedCategory === 'ALL';
-    let questionCount = isAllMode ? 30 : 10;
-    let levelLength = isAllMode ? 8000 : 2500;
-
-    flagPole.x = levelLength - 300;
-
-    // Suelo continuo ajustado a la altura de 440px
-    for (let x = 0; x < levelLength; x += 40) {
-        if ((x > 600 && x < 720) || (x > 1400 && x < 1520) || (x > 3200 && x < 3320) || (x > 5000 && x < 5120)) continue;
-        blocks.push({ x: x, y: 440, width: 40, height: 40, type: 'ground' });
-    }
-
-    let questionsPool = getActiveQuestions();
-    let spacing = isAllMode ? 230 : 200;
-
-    for (let i = 0; i < questionCount; i++) {
-        let bx = 220 + (i * spacing);
-        let by = (i % 3 === 0) ? 280 : ((i % 3 === 1) ? 320 : 250);
-        let qData = questionsPool[i % questionsPool.length];
-        
-        blocks.push({
-            x: bx,
-            y: by,
-            width: 40,
-            height: 40,
-            type: 'question',
-            hit: false,
-            question: qData,
-            bounceY: 0
-        });
-
-        if (i % 2 === 0) {
-            blocks.push({ x: bx + 40, y: by, width: 40, height: 40, type: 'brick' });
-        }
-    }
-
-    for (let cx = 300; cx < levelLength - 400; cx += 140) {
-        coinsList.push({ x: cx, y: 360 + Math.sin(cx) * 30, width: 22, height: 22, collected: false });
-    }
-}
-
-// --- 5. RELOJ ANÁLOGO COMPACTO ---
-function renderAnalogClock(hours, minutes) {
-    const clockCanvas = document.getElementById('clockCanvas');
-    const cCtx = clockCanvas.getContext('2d');
-    const radius = clockCanvas.width / 2;
-    
-    cCtx.clearRect(0, 0, clockCanvas.width, clockCanvas.height);
-    cCtx.save();
-    cCtx.translate(radius, radius);
-
-    let grad = cCtx.createRadialGradient(0, 0, radius - 8, 0, 0, radius);
-    grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(1, '#cbd5e1');
-
-    cCtx.beginPath();
-    cCtx.arc(0, 0, radius - 5, 0, 2 * Math.PI);
-    cCtx.fillStyle = grad;
-    cCtx.fill();
-    cCtx.lineWidth = 4;
-    cCtx.strokeStyle = '#00F0FF';
-    cCtx.stroke();
-
-    cCtx.font = 'bold 11px Arial';
-    cCtx.fillStyle = '#0f172a';
-    cCtx.textAlign = 'center';
-    cCtx.textBaseline = 'middle';
-
-    for (let num = 1; num <= 12; num++) {
-        let ang = num * Math.PI / 6;
-        cCtx.rotate(ang);
-        cCtx.translate(0, -radius + 16);
-        cCtx.rotate(-ang);
-        cCtx.fillText(num.toString(), 0, 0);
-        cCtx.rotate(ang);
-        cCtx.translate(0, radius - 16);
-        cCtx.rotate(-ang);
-    }
-
-    let hourAngle = ((hours % 12) + minutes / 60) * (Math.PI / 6);
-    cCtx.rotate(hourAngle);
-    cCtx.beginPath();
-    cCtx.moveTo(0, 0);
-    cCtx.lineTo(0, -radius * 0.45);
-    cCtx.lineWidth = 5;
-    cCtx.strokeStyle = '#FF0055';
-    cCtx.lineCap = 'round';
-    cCtx.stroke();
-    cCtx.rotate(-hourAngle);
-
-    let minuteAngle = minutes * (Math.PI / 30);
-    cCtx.rotate(minuteAngle);
-    cCtx.beginPath();
-    cCtx.moveTo(0, 0);
-    cCtx.lineTo(0, -radius * 0.68);
-    cCtx.lineWidth = 3;
-    cCtx.strokeStyle = '#0284c7';
-    cCtx.lineCap = 'round';
-    cCtx.stroke();
-    cCtx.rotate(-minuteAngle);
-
-    cCtx.beginPath();
-    cCtx.arc(0, 0, 4, 0, 2 * Math.PI);
-    cCtx.fillStyle = '#0f172a';
-    cCtx.fill();
-
-    cCtx.restore();
-}
-
-// --- 6. CONTROLES Y TECLAS ---
-document.querySelectorAll('.btn-category').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.btn-category').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        gameState.selectedCategory = e.target.getAttribute('data-cat');
-    });
-});
-
-window.addEventListener('keydown', e => {
-    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
-    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
-    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') {
-        if (!keys.up && player.grounded) {
-            player.vy = player.jumpPower;
-            player.grounded = false;
+        if (this.isGrounded) {
+            this.vy = this.jumpForce;
+            this.isGrounded = false;
+            airJumps = 0;
             audio.playJump();
-            createParticles(player.x + player.width/2, player.y + player.height, '#ffffff', 8);
+        } else if (airJumps < maxAirJumps) {
+            this.vy = this.jumpForce * 0.85;
+            airJumps++;
+            audio.playJump();
         }
-        keys.up = true;
-    }
-});
+    },
 
-window.addEventListener('keyup', e => {
-    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
-    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
-    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') keys.up = false;
-});
-
-const bindTouch = (id, keyName) => {
-    const btn = document.getElementById(id);
-    if (!btn) return;
-    btn.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        audio.init();
-        if (keyName === 'up') {
-            if (player.grounded) {
-                player.vy = player.jumpPower;
-                player.grounded = false;
-                audio.playJump();
-                createParticles(player.x + player.width/2, player.y + player.height, '#ffffff', 8);
+    update() {
+        if (keys.down && this.isGrounded) {
+            if (!this.isCrouching) {
+                this.isCrouching = true;
+                this.height = this.normalHeight / 2;
+                this.y = this.groundY - this.height;
             }
         } else {
-            keys[keyName] = true;
+            if (this.isCrouching) {
+                this.isCrouching = false;
+                this.height = this.normalHeight;
+                this.y = this.groundY - this.height;
+            }
         }
-    });
-    btn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        if (keyName !== 'up') keys[keyName] = false;
-    });
+
+        if (keys.left) {
+            this.facing = 'left';
+            if (this.x > 80) {
+                this.x -= this.speed;
+                currentScrollSpeed = 0;
+            } else {
+                currentScrollSpeed = -gameSpeed;
+            }
+        } else if (keys.right) {
+            this.facing = 'right';
+            if (this.x < canvas.width * 0.45) {
+                this.x += this.speed;
+                currentScrollSpeed = 0;
+            } else {
+                currentScrollSpeed = gameSpeed;
+            }
+        } else {
+            currentScrollSpeed = 0;
+        }
+
+        this.vy += this.gravity;
+        this.y += this.vy;
+
+        if (this.y >= this.groundY - this.height) {
+            this.y = this.groundY - this.height;
+            this.vy = 0;
+            this.isGrounded = true;
+            airJumps = 0;
+        }
+
+        if (this.isInvulnerable) {
+            this.invulnerableTimer--;
+            if (this.invulnerableTimer <= 0) {
+                this.isInvulnerable = false;
+            }
+        }
+    },
+
+    draw() {
+        if (this.isInvulnerable && Math.floor(Date.now() / 100) % 2 === 0) {
+            return;
+        }
+
+        ctx.save();
+        ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+        if (this.facing === 'left') {
+            ctx.scale(-1, 1);
+        }
+
+        const w = this.width;
+        const h = this.height;
+
+        if (this.isCrouching) {
+            ctx.fillStyle = '#1e40af';
+            ctx.fillRect(-w/3, -h/4, w/1.5, h/1.5);
+            ctx.fillStyle = '#fed7aa';
+            ctx.beginPath();
+            ctx.arc(w/6, -h/3, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#dc2626';
+            ctx.fillRect(-w/3, -h/2, w/1.5, 6);
+        } else {
+            ctx.fillStyle = '#1e40af';
+            ctx.fillRect(-w/4, -h/6, w/2, h/2.2);
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(w/8, -h/12, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(0, h/12, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#78350f';
+            ctx.font = 'bold 7px sans-serif';
+            ctx.fillText('K', -2, h/9);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-w/3, -h/4, w/2.5, h/3);
+
+            ctx.beginPath();
+            ctx.arc(w/3, -h/5, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#fed7aa';
+            ctx.beginPath();
+            ctx.arc(w/6, -h/2.5, 13, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(w/3, -h/2.8, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#451a03';
+            ctx.beginPath();
+            ctx.ellipse(w/4.5, -h/3.2, 8, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(w/12, -h/2.2, 4, 5);
+
+            ctx.fillStyle = '#dc2626';
+            ctx.fillRect(-w/4, -h/4.5, w/2, 5);
+
+            ctx.beginPath();
+            ctx.arc(w/6, -h/1.8, 12, Math.PI, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(-w/6, -h/1.7, w/1.5, 5);
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(w/8, -h/1.6, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(-w/3, h/3, w/2.5, h/4);
+        }
+
+        ctx.restore();
+    }
 };
 
-bindTouch('btn-left', 'left');
-bindTouch('btn-right', 'right');
-bindTouch('btn-jump', 'up');
+let clouds = Array.from({ length: 4 }, (_, i) => ({
+    x: i * 280 + Math.random() * 50,
+    y: 40 + Math.random() * 80,
+    speed: 0.8
+}));
 
-// --- 7. DIBUJO DEL PERSONAJE ---
-function drawColorfulPlayer(p) {
-    ctx.save();
-    
-    if (p.direction === 'left') {
-        ctx.translate(p.x + p.width, p.y);
-        ctx.scale(-1, 1);
-    } else {
-        ctx.translate(p.x, p.y);
+let platforms = [];
+let floatingBricks = [];
+let coinsList = [];
+let cannonballs = [];
+
+function spawnElements() {
+    if (Math.random() < 0.01 && platforms.length < 2) {
+        platforms.push({
+            x: canvas.width + 50,
+            y: hero.groundY - 110 - Math.random() * 50,
+            width: 130,
+            height: 22
+        });
     }
 
-    let legOffset = (p.vx !== 0 && p.grounded) ? Math.sin(gameState.animFrame * 0.35) * 5 : 0;
-
-    // Sombra
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.beginPath();
-    ctx.ellipse(16, 42, 14, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Zapatos
-    ctx.fillStyle = '#4a2810';
-    ctx.fillRect(2, 36 + legOffset, 12, 8);
-    ctx.fillRect(18, 36 - legOffset, 12, 8);
-
-    // Overol Azul Neón
-    ctx.fillStyle = '#0055ff';
-    ctx.fillRect(4, 22, 24, 16);
-    ctx.fillRect(4, 32 + legOffset, 10, 6);
-    ctx.fillRect(18, 32 - legOffset, 10, 6);
-
-    // Tirantes
-    ctx.fillStyle = '#002299';
-    ctx.fillRect(6, 18, 4, 8);
-    ctx.fillRect(22, 18, 4, 8);
-
-    // Botones
-    ctx.fillStyle = '#FFD700';
-    ctx.beginPath();
-    ctx.arc(8, 26, 2.5, 0, Math.PI * 2);
-    ctx.arc(24, 26, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Polera
-    ctx.fillStyle = '#FF5252';
-    ctx.fillRect(4, 14, 24, 8);
-
-    // Guantes
-    ctx.fillStyle = '#FFFFFF';
-    let armY = p.grounded ? 18 : 10;
-    ctx.fillRect(-1, armY, 6, 8);
-    ctx.fillRect(27, armY, 6, 8);
-
-    // Cabeza
-    ctx.fillStyle = '#ffcc99';
-    ctx.fillRect(6, 4, 20, 12);
-
-    // Ojos
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(17, 6, 7, 7);
-    ctx.fillStyle = '#00F0FF';
-    ctx.fillRect(20, 7, 4, 5);
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(22, 8, 2, 3);
-
-    // Gorra
-    ctx.fillStyle = '#FF0055';
-    ctx.fillRect(4, -1, 22, 6);
-    ctx.fillRect(14, 3, 15, 4);
-
-    ctx.restore();
-}
-
-// --- 8. ACTUALIZACIÓN Y DIBUJO ---
-function update() {
-    if (!gameState.active) return;
-
-    gameState.animFrame++;
-
-    if (keys.right) {
-        player.vx = player.speed;
-        player.direction = 'right';
-    } else if (keys.left) {
-        player.vx = -player.speed;
-        player.direction = 'left';
-    } else {
-        player.vx = 0;
+    if (Math.random() < 0.015 && floatingBricks.length < 3) {
+        const variableHeights = [
+            hero.groundY - 100, 
+            hero.groundY - 150, 
+            hero.groundY - 210
+        ];
+        const randomY = variableHeights[Math.floor(Math.random() * variableHeights.length)];
+        
+        floatingBricks.push({
+            x: canvas.width + 50,
+            y: randomY,
+            width: 44,
+            height: 44,
+            hit: false,
+            solved: false
+        });
     }
 
-    player.vy += gravity;
-    player.x += player.vx;
-
-    // Colisiones Horizontales
-    blocks.forEach(b => {
-        if (checkCollision(player, b)) {
-            if (player.vx > 0) player.x = b.x - player.width;
-            else if (player.vx < 0) player.x = b.x + b.width;
-        }
-    });
-
-    player.y += player.vy;
-    player.grounded = false;
-
-    // Colisiones Verticales
-    blocks.forEach(b => {
-        if (checkCollision(player, b)) {
-            if (player.vy > 0 && player.y + player.height - player.vy <= b.y) {
-                player.y = b.y - player.height;
-                player.vy = 0;
-                player.grounded = true;
-            } else if (player.vy < 0) {
-                player.y = b.y + b.height;
-                player.vy = 0;
-
-                if (b.type === 'question' && !b.hit) {
-                    triggerMathQuestion(b);
-                }
-            }
-        }
-    });
-
-    // Monedas
-    coinsList.forEach(c => {
-        if (!c.collected && checkCollision(player, c)) {
-            c.collected = true;
-            gameState.coins++;
-            gameState.score += 50;
-            audio.playCoin();
-            createParticles(c.x + 10, c.y + 10, '#FFD700', 12);
-            updateHUD();
-        }
-    });
-
-    // Caída
-    if (player.y > canvas.height + 50) {
-        playerLoseLife();
+    if (Math.random() < 0.02 && coinsList.length < 4) {
+        coinsList.push({
+            x: canvas.width + 50,
+            y: hero.groundY - 60 - Math.random() * 110,
+            radius: 12
+        });
     }
 
-    gameState.cameraX = player.x - 240;
-    if (gameState.cameraX < 0) gameState.cameraX = 0;
+    if (Math.random() < 0.015 && cannonballs.length < 2) {
+        const levels = [
+            hero.groundY - 25, 
+            hero.groundY - 48, 
+            hero.groundY - 85  
+        ];
+        const selectedY = levels[Math.floor(Math.random() * levels.length)];
 
-    updateParticles();
-
-    if (checkCollision(player, flagPole)) {
-        audio.playCorrect();
-        alert("¡FELICITACIONES! Has completado la gran aventura matemática.");
-        resetGame();
+        cannonballs.push({
+            x: canvas.width + 50,
+            y: selectedY, 
+            width: 50,
+            height: 22,
+            speed: gameSpeed * 1.4
+        });
     }
 }
 
-function checkCollision(r1, r2) {
-    return r1.x < r2.x + r2.width &&
-           r1.x + r1.width > r2.x &&
-           r1.y < r2.y + r2.height &&
-           r1.y + r1.height > r2.y;
-}
+// --- GESTIÓN DE PREGUNTAS (15 POR CATEGORÍA O 25 EN ALL, SIN REPETIR) ---
+function getNextQuestion() {
+    let filtered = selectedCategory === "ALL" 
+        ? questionBank 
+        : questionBank.filter(item => item.cat === selectedCategory);
 
-function drawBackground() {
-    let skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    skyGrad.addColorStop(0, '#1a1c4b');
-    skyGrad.addColorStop(0.6, '#5a2a78');
-    skyGrad.addColorStop(1, '#ff6b6b');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (filtered.length === 0) filtered = questionBank;
 
-    ctx.fillStyle = 'rgba(40, 20, 70, 0.6)';
-    for (let i = -100; i < 9000; i += 300) {
-        let x = i - gameState.cameraX * 0.2;
-        ctx.beginPath();
-        ctx.moveTo(x, 440);
-        ctx.lineTo(x + 150, 220);
-        ctx.lineTo(x + 300, 440);
-        ctx.fill();
+    let unasked = filtered.filter(q => !sessionUsedQuestions.includes(q));
+    if (unasked.length === 0) {
+        unasked = filtered;
     }
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-    for (let i = -100; i < 9000; i += 400) {
-        let x = i - gameState.cameraX * 0.4;
-        ctx.beginPath();
-        ctx.arc(x, 90, 28, 0, Math.PI * 2);
-        ctx.arc(x + 28, 80, 34, 0, Math.PI * 2);
-        ctx.arc(x + 56, 90, 28, 0, Math.PI * 2);
-        ctx.fill();
-    }
+    const q = unasked[Math.floor(Math.random() * unasked.length)];
+    sessionUsedQuestions.push(q);
+    return q;
 }
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function openMathQuiz(brick) {
+    activeBrick = brick;
+    isPlaying = false;
+    mathOverlay.classList.add('active');
 
-    drawBackground();
+    const currentQ = getNextQuestion();
 
-    ctx.save();
-    ctx.translate(-gameState.cameraX, 0);
+    mathTopic.textContent = `⚡ ${currentQ.topic.toUpperCase()} (${questionsAnsweredInRun + 1}/${targetQuestionsPerRun}) ⚡`;
+    mathQuestionText.textContent = currentQ.q;
+    optionsContainer.innerHTML = '';
 
-    blocks.forEach(b => {
-        if (b.type === 'ground') {
-            let groundGrad = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.height);
-            groundGrad.addColorStop(0, '#22c55e');
-            groundGrad.addColorStop(0.2, '#15803d');
-            groundGrad.addColorStop(0.21, '#78350f');
-            groundGrad.addColorStop(1, '#451a03');
-
-            ctx.fillStyle = groundGrad;
-            ctx.fillRect(b.x, b.y, b.width, b.height);
-            ctx.strokeStyle = '#000000';
-            ctx.strokeRect(b.x, b.y, b.width, b.height);
-        } else if (b.type === 'brick') {
-            ctx.fillStyle = '#b91c1c';
-            ctx.fillRect(b.x, b.y, b.width, b.height);
-            ctx.strokeStyle = '#7f1d1d';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(b.x, b.y, b.width, b.height);
-        } else if (b.type === 'question') {
-            if (b.hit) {
-                ctx.fillStyle = '#475569';
-                ctx.fillRect(b.x, b.y, b.width, b.height);
-                ctx.strokeStyle = '#1e293b';
-                ctx.strokeRect(b.x, b.y, b.width, b.height);
-                ctx.fillStyle = '#94a3b8';
-                ctx.font = 'bold 20px Arial';
-                ctx.fillText('✓', b.x + 12, b.y + 26);
-            } else {
-                if (isBlockImageLoaded) {
-                    try {
-                        ctx.drawImage(blockImg, b.x, b.y, b.width, b.height);
-                    } catch (e) {
-                        isBlockImageLoaded = false;
-                    }
-                } else {
-                    let pulse = Math.sin(gameState.animFrame * 0.1) * 3;
-                    ctx.fillStyle = '#eab308';
-                    ctx.fillRect(b.x, b.y, b.width, b.height);
-                    ctx.strokeStyle = '#fef08a';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(b.x + 2, b.y + 2, b.width - 4, b.height - 4);
-                    
-                    ctx.fillStyle = '#000000';
-                    ctx.font = 'bold 24px Arial';
-                    ctx.fillText('?', b.x + 14, b.y + 28 + pulse % 2);
-                }
-            }
-        }
-    });
-
-    coinsList.forEach(c => {
-        if (!c.collected) {
-            let floatY = Math.sin(gameState.animFrame * 0.08 + c.x) * 4;
-            ctx.fillStyle = '#FFD700';
-            ctx.beginPath();
-            ctx.arc(c.x + 10, c.y + 10 + floatY, 9, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#FFF';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        }
-    });
-
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillRect(flagPole.x, flagPole.y, flagPole.width, flagPole.height);
-    ctx.fillStyle = '#FF0055';
-    ctx.beginPath();
-    ctx.moveTo(flagPole.x + 24, flagPole.y);
-    ctx.lineTo(flagPole.x + 80, flagPole.y + 30);
-    ctx.lineTo(flagPole.x + 24, flagPole.y + 60);
-    ctx.fill();
-
-    drawParticles();
-    drawColorfulPlayer(player);
-
-    ctx.restore();
-}
-
-function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
-}
-
-// --- 9. MODAL Y LÓGICA DE PREGUNTAS ---
-function triggerMathQuestion(block) {
-    gameState.active = false;
-    currentActiveBlock = block;
-
-    const overlay = document.getElementById('math-overlay');
-    const topicText = document.getElementById('math-topic');
-    const qText = document.getElementById('math-question-text');
-    const optionsGrid = document.getElementById('options-container');
-    const clockCanvas = document.getElementById('clockCanvas');
-
-    const q = block.question;
-
-    topicText.innerText = `¡DESAFÍO: ${q.topic}!`;
-    qText.innerText = q.question;
-    optionsGrid.innerHTML = '';
-
-    if (q.type === 'clock') {
+    if (currentQ.cat === "RELOJ" && currentQ.hour !== undefined) {
         clockCanvas.style.display = 'block';
-        renderAnalogClock(q.hours, q.minutes);
+        drawClock(currentQ.hour, currentQ.minute || 0);
     } else {
         clockCanvas.style.display = 'none';
     }
 
-    let optionIndices = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5);
-
-    optionIndices.forEach(idx => {
-        let btn = document.createElement('button');
+    currentQ.options.forEach(opt => {
+        const btn = document.createElement('button');
         btn.className = 'btn-option';
-        btn.innerText = q.options[idx];
-        // Usamos addEventListener con touch-action y respuesta directa
-        btn.addEventListener('click', () => {
-            handleAnswer(idx === q.answer);
-        });
-        optionsGrid.appendChild(btn);
-    });
+        btn.textContent = opt;
 
-    overlay.classList.add('active');
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (opt === currentQ.correct) {
+                audio.playCollect();
+                score += 200;
+                hudScore.textContent = String(score).padStart(6, '0');
+                if (activeBrick) activeBrick.solved = true;
+                
+                questionsAnsweredInRun++;
+                checkWinCondition();
+            } else {
+                audio.playHit();
+                lives = Math.max(0, lives - 1);
+                hudLives.textContent = lives;
+                if (activeBrick) activeBrick.hit = true;
+                if (lives === 0) {
+                    triggerGameOver();
+                } else {
+                    closeMathQuiz();
+                }
+            }
+        });
+        optionsContainer.appendChild(btn);
+    });
 }
 
-function handleAnswer(isCorrect) {
-    const overlay = document.getElementById('math-overlay');
-    overlay.classList.remove('active');
-
-    if (isCorrect) {
-        audio.playCorrect();
-        gameState.score += 200;
-        gameState.coins += 5;
-        if (currentActiveBlock) currentActiveBlock.hit = true;
-        createParticles(player.x + 16, player.y, '#00FFCC', 25);
+function checkWinCondition() {
+    if (questionsAnsweredInRun >= targetQuestionsPerRun) {
+        triggerVictory();
     } else {
-        audio.playWrong();
-        gameState.lives--;
-        if (gameState.lives <= 0) {
-            alert("¡Se te han acabado las vidas! Inténtalo de nuevo.");
-            resetGame();
-            return;
+        closeMathQuiz();
+    }
+}
+
+function triggerVictory() {
+    isPlaying = false;
+    audio.playVictory();
+    screenOverlay.classList.add('visible');
+    document.getElementById('screen-title').textContent = "¡EXCELENTE TRABAJO!";
+    document.getElementById('screen-subtitle').textContent = `¡Nivel Superado! Puntaje: ${score} - Colegio Senda del Saber`;
+    btnStartGame.textContent = "JUGAR NUEVAMENTE";
+}
+
+function closeMathQuiz() {
+    mathOverlay.classList.remove('active');
+    messagePauseTimer = 40;
+    isPlaying = true;
+    requestAnimationFrame(updateAndRender);
+}
+
+function checkLifeMilestones() {
+    const milestone = Math.floor(score / 1600);
+    if (milestone > lastLifeMilestone) {
+        lastLifeMilestone = milestone;
+        if (lives < 3) {
+            lives += 1;
+            hudLives.textContent = lives;
+            audio.playExtraLife();
+        }
+    }
+}
+
+function triggerGameOver() {
+    isPlaying = false;
+    audio.playGameOver();
+    screenOverlay.classList.add('visible');
+    document.getElementById('screen-title').textContent = "¡FIN DEL JUEGO!";
+    document.getElementById('screen-subtitle').textContent = `Puntaje Final: ${score}`;
+    btnStartGame.textContent = "VOLVER A INTENTAR";
+}
+
+// --- BUCLE PRINCIPAL ---
+function updateAndRender() {
+    if (!isPlaying) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#3a86ff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    clouds.forEach(cloud => {
+        if (messagePauseTimer <= 0 && currentScrollSpeed !== 0) {
+            cloud.x -= (currentScrollSpeed > 0 ? cloud.speed : -cloud.speed * 0.5);
+            if (cloud.x < -100) cloud.x = canvas.width + 50;
+            if (cloud.x > canvas.width + 50) cloud.x = -100;
+        }
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.beginPath();
+        ctx.arc(cloud.x, cloud.y, 22, 0, Math.PI * 2);
+        ctx.arc(cloud.x + 18, cloud.y - 8, 16, 0, Math.PI * 2);
+        ctx.arc(cloud.x + 35, cloud.y, 20, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    ctx.fillStyle = '#2b9348';
+    ctx.fillRect(0, hero.groundY, canvas.width, canvas.height - hero.groundY);
+    ctx.fillStyle = '#55a630';
+    ctx.fillRect(0, hero.groundY, canvas.width, 12);
+
+    if (messagePauseTimer > 0) {
+        messagePauseTimer--;
+    } else {
+        hero.update();
+        if (currentScrollSpeed > 0) {
+            spawnElements();
         }
     }
 
-    updateHUD();
-    gameState.active = true;
-}
+    hero.draw();
 
-function playerLoseLife() {
-    audio.playWrong();
-    gameState.lives--;
-    updateHUD();
+    platforms.forEach(p => {
+        if (messagePauseTimer <= 0) p.x -= currentScrollSpeed;
 
-    if (gameState.lives <= 0) {
-        alert("¡Game Over! Vuelve a intentar el nivel.");
-        resetGame();
-    } else {
-        player.x = 50;
-        player.y = 280;
-        player.vx = 0;
-        player.vy = 0;
+        drawBrickPlatform(p.x, p.y, p.width, p.height);
+
+        if (
+            hero.x + hero.width > p.x &&
+            hero.x < p.x + p.width &&
+            hero.y + hero.height >= p.y &&
+            hero.y + hero.height - hero.vy <= p.y + 12 &&
+            hero.vy >= 0
+        ) {
+            hero.y = p.y - hero.height;
+            hero.vy = 0;
+            hero.isGrounded = true;
+            airJumps = 0;
+        }
+    });
+
+    platforms = platforms.filter(p => p.x > -200 && p.x < canvas.width + 200);
+
+    for (let i = coinsList.length - 1; i >= 0; i--) {
+        const c = coinsList[i];
+        if (messagePauseTimer <= 0) c.x -= currentScrollSpeed;
+
+        ctx.save();
+        ctx.fillStyle = '#ffd700';
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#b45309';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('$', c.x - 4, c.y + 4);
+        ctx.restore();
+
+        const distCoin = Math.hypot((hero.x + hero.width / 2) - c.x, (hero.y + hero.height / 2) - c.y);
+        if (distCoin < hero.width / 2 + c.radius) {
+            audio.playCollect();
+            coins += 1;
+            score += 50;
+            hudCoins.textContent = String(coins).padStart(2, '0');
+            hudScore.textContent = String(score).padStart(6, '0');
+            coinsList.splice(i, 1);
+        } else if (c.x < -50 || c.x > canvas.width + 50) {
+            coinsList.splice(i, 1);
+        }
+    }
+
+    for (let i = floatingBricks.length - 1; i >= 0; i--) {
+        const brick = floatingBricks[i];
+        if (messagePauseTimer <= 0) brick.x -= currentScrollSpeed;
+
+        if (brick.solved) {
+            ctx.fillStyle = '#10b981';
+            ctx.strokeStyle = '#047857';
+            ctx.lineWidth = 2;
+            ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+            ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.fillText('✓', brick.x + 11, brick.y + 31);
+        } else if (brick.hit) {
+            ctx.fillStyle = '#9ca3af';
+            ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+            ctx.strokeStyle = '#4b5563';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
+        } else {
+            ctx.fillStyle = '#d97706';
+            ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
+
+            if (sendaImg.complete) {
+                ctx.drawImage(sendaImg, brick.x + 6, brick.y + 6, brick.width - 12, brick.height - 12);
+            } else {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 22px sans-serif';
+                ctx.fillText('?', brick.x + 13, brick.y + 29);
+            }
+        }
+
+        if (
+            !brick.hit && !brick.solved &&
+            hero.x < brick.x + brick.width &&
+            hero.x + hero.width > brick.x &&
+            hero.y < brick.y + brick.height &&
+            hero.y + hero.height > brick.y
+        ) {
+            openMathQuiz(brick);
+            return;
+        }
+
+        if (brick.x < -50 || brick.x > canvas.width + 50) floatingBricks.splice(i, 1);
+    }
+
+    for (let i = cannonballs.length - 1; i >= 0; i--) {
+        const cb = cannonballs[i];
+        if (messagePauseTimer <= 0) {
+            let rocketSpeed = cb.speed + (currentScrollSpeed > 0 ? currentScrollSpeed : 0);
+            cb.x -= rocketSpeed;
+        }
+
+        ctx.save();
+        ctx.translate(cb.x, cb.y);
+
+        ctx.fillStyle = '#1f2937';
+        ctx.strokeStyle = '#374151';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(0, 0, cb.width, cb.height, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.moveTo(cb.width, 0);
+        ctx.lineTo(cb.width + 14, cb.height / 2);
+        ctx.lineTo(cb.width, cb.height);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.moveTo(0, 4);
+        ctx.lineTo(-12, cb.height / 2);
+        ctx.lineTo(0, cb.height - 4);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+
+        const isColliding = 
+            hero.x < cb.x + cb.width &&
+            hero.x + hero.width > cb.x &&
+            hero.y < cb.y + cb.height &&
+            hero.y + hero.height > cb.y;
+
+        if (isColliding && !hero.isInvulnerable) {
+            audio.playHit();
+            lives = Math.max(0, lives - 1);
+            hudLives.textContent = lives;
+            hero.isInvulnerable = true;
+            hero.invulnerableTimer = 60;
+            hero.vy = -8;
+
+            cannonballs.splice(i, 1);
+
+            if (lives === 0) {
+                triggerGameOver();
+                return;
+            }
+        }
+
+        if (cb.x < -100 || cb.x > canvas.width + 100) cannonballs.splice(i, 1);
+    }
+
+    checkLifeMilestones();
+
+    if (isPlaying) {
+        animationFrameId = requestAnimationFrame(updateAndRender);
     }
 }
 
-function updateHUD() {
-    document.getElementById('hud-score').innerText = gameState.score.toString().padStart(6, '0');
-    document.getElementById('hud-coins').innerText = gameState.coins.toString().padStart(2, '0');
-    document.getElementById('hud-lives').innerText = gameState.lives;
-    document.getElementById('hud-mode').innerText = gameState.selectedCategory;
-}
-
-function resetGame() {
-    gameState.active = false;
-    player.x = 50;
-    player.y = 280;
-    player.vx = 0;
-    player.vy = 0;
-    gameState.cameraX = 0;
-    updateHUD();
-    initLevel();
-    document.getElementById('screen-overlay').classList.add('visible');
-}
-
-document.getElementById('btn-start-game').addEventListener('click', () => {
-    audio.init();
-    gameState.score = 0;
-    gameState.coins = 0;
-    gameState.lives = 3;
-    player.x = 50;
-    player.y = 280;
-    player.vx = 0;
-    player.vy = 0;
-    gameState.cameraX = 0;
-    document.getElementById('screen-overlay').classList.remove('visible');
-    updateHUD();
-    initLevel();
-    gameState.active = true;
+// --- EVENTOS ---
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = true;
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        if (isPlaying && messagePauseTimer <= 0) {
+            hero.jump();
+        }
+    }
 });
 
-// Inicialización de arranque
-initLevel();
-gameLoop();
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') keys.down = false;
+});
+
+categoryButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        categoryButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedCategory = btn.dataset.cat;
+        hudMode.textContent = btn.textContent.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ ]/g, "").trim().toUpperCase();
+    });
+});
+
+btnStartGame.addEventListener('click', () => {
+    audio.init();
+    score = 0;
+    coins = 0;
+    lives = 3;
+    lastLifeMilestone = 0;
+    messagePauseTimer = 0;
+    sessionUsedQuestions = [];
+    questionsAnsweredInRun = 0;
+
+    // Configurar meta según la categoría seleccionada
+    targetQuestionsPerRun = (selectedCategory === "ALL") ? 25 : 15;
+
+    hudScore.textContent = "000000";
+    hudCoins.textContent = "00";
+    hudLives.textContent = lives;
+
+    platforms = [];
+    floatingBricks = [];
+    coinsList = [];
+    cannonballs = [];
+    hero.reset();
+
+    screenOverlay.classList.remove('visible');
+    isPlaying = true;
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    updateAndRender();
+});
+
+hero.reset();
