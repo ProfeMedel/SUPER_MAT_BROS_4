@@ -1,8 +1,14 @@
+<!--
+Desarrollado por el profesor Mauricio Medel Guajardo
+para el colegio Senda del Saber de Puente Alto.
+Santiago, 2026
+profe.tp.medel@gmail.com
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Math Bros - 4° Nivel</title>
     <link rel="icon" type="image/png" href="images/senda.png">
     <link rel="stylesheet" href="style.css">
@@ -27,8 +33,8 @@
                 <div class="math-title" id="math-topic">¡BLOQUE MÁGICO!</div>
                 <div class="math-question" id="math-question-text">Cargando pregunta...</div>
                 
-                <!-- Reloj Análogo Optimizado -->
-                <canvas id="clockCanvas" width="120" height="120" style="display:none; margin: 5px auto;"></canvas>
+                <!-- Reloj Análogo Educativo Optimizado -->
+                <canvas id="clockCanvas" width="140" height="140" style="display:none; margin: 10px auto;"></canvas>
 
                 <div class="options-grid" id="options-container">
                     <!-- Opciones generadas dinámicamente -->
@@ -55,15 +61,6 @@
 
             <button class="btn-start" id="btn-start-game">¡COMENZAR AVENTURA!</button>
         </div>
-    </div>
-
-    <!-- Controles Táctiles para Móviles/Tablets -->
-    <div id="mobile-controls">
-        <div class="dpad">
-            <button class="btn-touch" id="btn-left">◀</button>
-            <button class="btn-touch" id="btn-right">▶</button>
-        </div>
-        <button class="btn-touch btn-jump" id="btn-jump">SALTO ⬆</button>
     </div>
 
     <script src="script.js"></script>
